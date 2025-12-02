@@ -1,5 +1,7 @@
+import os
 import argparse
 import datetime
+from icrawler.builtin import BingImageCrawler
 
 # Парсим аргументы командной строки
 def parse_args():
@@ -28,18 +30,35 @@ def check_args(args):
     
     return args
 
-# Главная функция
+# Скачивание изображений обезьян с Bing
+def download_images(total, year, folder):
+    os.makedirs(folder, exist_ok=True)
+    print(f"паппка: {os.path.abspath(folder)}")
+    print(f"ищем: monkey {year}")
+    print(f"скачиваем {total} картинок")
+    
+    crawler = BingImageCrawler(storage={'root_dir': folder})
+    crawler.crawl(keyword=f"monkey {year}", max_num=total)
+    
+    print("Скачано!")
+
+# Главная функция программы
 def main():
     args = parse_args()
     
     try:
         check_args(args)
-        print(f"Скачаем {args.total} картинок обезьян {args.year} года")
-        print(f"Сохраним в папку: {args.output}")
-        print(f"Список файлов: {args.annotation}")
+        
+        print("=" * 40)
+        print("СКАЧИВАЕМ КАРТИНКИ ОБЕЗЬЯН")
+        print("=" * 40)
+        
+        download_images(args.total, args.year, args.output)
+        
+        print("\n Картинки скачаны!")
         
     except Exception as e:
-        print(f"Ошибка: {e}")
+        print(f"\n Ошибка: {e}")
 
 if __name__ == "__main__":
     main()
