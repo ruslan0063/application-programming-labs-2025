@@ -1,0 +1,5 @@
+запуск с дефолтными параметрами(100 изображений в imgs, аннотация в annotation.csv)
+python Lab2.py
+
+запуск со своими параметрами
+python Lab2.py -i my_monkeys -c annotation_monkey.csv -n 50

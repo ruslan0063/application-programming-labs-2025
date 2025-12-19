@@ -6,32 +6,34 @@ from icrawler.builtin import BingImageCrawler
 
 class PathsIterator:
     """
-    Итератор по относительным путям к файлам из CSV-аннотации
+    Итератор по путям к файлам из CSV-аннотации.
     """
     def __init__(self, csv_path: str):
         if not os.path.exists(csv_path):
             raise FileNotFoundError(f"Файл аннотации не найден: {csv_path}")
-        
+
         with open(csv_path, newline='', encoding='utf-8') as file:
             reader = csv.reader(file)
-            next(reader)  # пропускаем заголовок
-            self.paths = [row[1] for row in reader if len(row) >= 2]
+            next(reader)
+            self.paths = [(row[0], row[1]) for row in reader if len(row) >= 2]
             self.index = 0
 
     def __iter__(self):
         return self
 
-    def __next__(self) -> str:
+    def __next__(self) -> tuple[str, str]:
         if self.index < len(self.paths):
-            path = self.paths[self.index]
+            path_tuple = self.paths[self.index]
             self.index += 1
-            return path
+            return path_tuple
         raise StopIteration
 
 
 def parse_args():
     """Парсинг аргументов командной строки"""
-    parser = argparse.ArgumentParser(description="Скачивание изображений monkey с помощью icrawler и создание аннотации")
+    parser = argparse.ArgumentParser(
+        description="Скачивание изображений monkey с помощью icrawler и создание аннотации"
+    )
     parser.add_argument("-i", "--img_dir", default="imgs", type=str,
                         help="Папка для сохранения изображений (по умолчанию: imgs)")
     parser.add_argument("-c", "--csv_path", default="annotation.csv", type=str,
@@ -49,8 +51,8 @@ def parse_args():
 def download_monkey_images(img_dir: str, max_num: int):
     """Скачивание изображений monkey через BingImageCrawler (icrawler)"""
     crawler = BingImageCrawler(
-        downloader_threads=4,          
-        storage={'root_dir': img_dir}  
+        downloader_threads=4,
+        storage={'root_dir': img_dir}
     )
     crawler.crawl(keyword="monkey", max_num=max_num)
 
@@ -59,8 +61,7 @@ def create_annotation(img_dir: str, csv_path: str):
     """Создаёт CSV с абсолютными и относительными путями к изображениям"""
     if not os.path.exists(img_dir):
         raise FileNotFoundError(f"Папка с изображениями не найдена: {img_dir}")
-    
-    # icrawler сохраняет файлы с именами 000001.jpg, 000002.jpg и т.д.
+
     image_files = [
         f for f in os.listdir(img_dir)
         if os.path.isfile(os.path.join(img_dir, f)) and f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))
@@ -86,26 +87,44 @@ def create_annotation(img_dir: str, csv_path: str):
 def main():
     try:
         img_dir, csv_path, max_num = parse_args()
-
         os.makedirs(img_dir, exist_ok=True)
-
         print(f"Скачиваем до {max_num} изображений 'monkey' в папку: {img_dir}")
         download_monkey_images(img_dir, max_num)
-
         print("Создаём аннотацию")
         create_annotation(img_dir, csv_path)
-
         print(f"Изображения сохранены в: {os.path.abspath(img_dir)}")
         print(f"Аннотация сохранена в: {os.path.abspath(csv_path)}")
-
-        # Демонстрация итератора
-        print("\nПервые 5 относительных путей через итератор:")
-        iterator = PathsIterator(csv_path)
-        for i, path in enumerate(iterator):
-            if i >= 5:
+        print("\n")
+        print("Работа итератора PathsIterator")
+        print(" ")
+        while True:
+            try:
+                user_input = input("\nВведите количество записей для вывода (или Enter для 5): ").strip()
+                if user_input == "":
+                    n = 5
+                else:
+                    n = int(user_input)
+                    if n <= 0:
+                        print("Пожалуйста, введите положительное число.")
+                        continue
                 break
-            print(f"  {path}")
+            except ValueError:
+                print("Ошибка: введите целое положительное число.")
+        print(f"\nПервые {n} записей через итератор:")
+        print(" ")
+        iterator = PathsIterator(csv_path)
+        count = 0
+        for abs_path, rel_path in iterator:
+            if count >= n:
+                break
+            print(f"Абсолютный:   {abs_path}")
+            print(f"Относительный: {rel_path}")
+            print("  ")
+            count += 1
 
+        if count == 0:
+            print("(Нет записей, аннотация пуста)")
+            
     except Exception as e:
         print(f"Ошибка: {e}")
 
