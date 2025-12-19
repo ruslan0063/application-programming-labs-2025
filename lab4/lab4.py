@@ -17,7 +17,7 @@ def parse_arguments():
                         help="Путь для сохранения гистограммы")
     parser.add_argument("-s", "--channel", default="red", type=str,
                         choices=["red", "green", "blue"],
-                        help="Канал для анализа и построения диапазонов (red, green или blue)")
+                        help="Канал для анализа (red, green или blue)")
     args = parser.parse_args()
     return args.csv_path, args.dtfr_path, args.grph_path, args.channel
 
@@ -26,34 +26,35 @@ def calculate_mean_brightness(image: np.ndarray, channel_idx: int) -> float:
     """Вычисляет среднюю яркость по указанному каналу (0=B, 1=G, 2=R)"""
     if image is None:
         return np.nan
-    # OpenCV использует BGR
     channel = image[:, :, channel_idx]
     return channel.mean()
 
 
-def get_brightness_range(mean_value: float, bins: list = None) -> str:
-    """Определяет диапазон яркости (например, '0-50', '51-100' и т.д.)"""
-    if bins is None:
-        bins = [0, 50, 100, 150, 200, 256]
+def get_brightness_range(mean_value: float) -> str:
+    """Определяет диапазон яркости"""
+    if pd.isna(mean_value):
+        return "Ошибка загрузки"
+
+    bins = [0, 50, 100, 150, 200, 256]
     for i in range(len(bins) - 1):
         if bins[i] <= mean_value < bins[i + 1]:
             return f"{int(bins[i])}-{int(bins[i + 1] - 1)}"
-    return f"{int(bins[-1])}+"
+    return "201-255"  # для значений 201–255
 
 
 def create_dataframe(annotation_path: str, channel: str) -> pd.DataFrame:
     """Создаёт DataFrame с путями и диапазоном средней яркости по каналу"""
     df = pd.read_csv(annotation_path)
 
-    # Словарь соответствия названия канала и индекса в BGR
     channel_map = {"red": 2, "green": 1, "blue": 0}
     channel_idx = channel_map[channel]
 
     mean_brightnesses = []
     ranges = []
 
-    for rel_path in df["Относительный путь"]:
-        image = cv2.imread(rel_path)
+    # Используем АБСОЛЮТНЫЙ путь — он всегда правильный!
+    for abs_path in df["Абсолютный путь"]:
+        image = cv2.imread(abs_path)
         mean_val = calculate_mean_brightness(image, channel_idx)
         mean_brightnesses.append(mean_val)
         ranges.append(get_brightness_range(mean_val))
@@ -67,7 +68,9 @@ def create_dataframe(annotation_path: str, channel: str) -> pd.DataFrame:
 def plot_histogram(df: pd.DataFrame, channel: str, save_path: str):
     """Строит гистограмму распределения файлов по диапазонам яркости"""
     range_column = f"Диапазон яркости ({channel})"
-    counts = df[range_column].value_counts().sort_index()
+    # Убираем строки с ошибкой загрузки для графика
+    clean_data = df[df[range_column] != "Ошибка загрузки"]
+    counts = clean_data[range_column].value_counts().sort_index()
 
     plt.figure(figsize=(10, 6))
     counts.plot(kind='bar', color='skyblue', edgecolor='black')
@@ -93,16 +96,16 @@ def main():
 
         df = create_dataframe(annotation_path, channel)
 
-        # Сортировка и фильтрация (пример демонстрации)
-        sorted_df = df.sort_values("Средняя яркость", ignore_index=True)
-        print("\nDataFrame отсортирован по средней яркости:")
+        # Сортировка по средней яркости
+        sorted_df = df.sort_values("Средняя яркость", ignore_index=True, na_position='last')
+        print("\nDataFrame отсортирован по средней яркости (первые 10 строк):")
         print(sorted_df.head(10))
 
         # Сохранение DataFrame
         sorted_df.to_csv(dataframe_path, index=False)
         print(f"\nDataFrame сохранён в: {dataframe_path}")
 
-        # Построение и сохранение гистограммы
+        # Гистограмма
         plot_histogram(sorted_df, channel, graph_path)
         print(f"Гистограмма сохранена в: {graph_path}")
 
