@@ -1,0 +1,20 @@
+установка зависимостей
+pip install opencv-python numpy matplotlib
+
+python lab3.py --i 000001.jpg --o result.jpg(по умолчанию RGB)
+
+python lab3.py --i 000001.jpg --o result1.jpg -m RGB
+python lab3.py --i 000001.jpg --o result2.jpg -m RBG
+python lab3.py --i 000001.jpg --o result3.jpg -m GRB
+python lab3.py --i 000001.jpg --o result4.jpg -m GBR
+python lab3.py --i 000001.jpg --o result5.jpg -m BRG
+python lab3.py --i 000001.jpg --o result6.jpg -m BGR
+
+
+RGB:Делает цвета нормальными и естественными.Убирает синеватый,оранжевый оттенок, 
+который бывает в BGR.
+RBG:Цвета становятся странными и неестественными
+GRB:Изображение приобретает тёплые желто-красные тона(с жёлтым фильтром).
+GBR:Цвета инопланетные.
+BRG:Делает картинку холодной и синеватой.
+BGR:Ничего не меняет(оставляет исходный формат OpenCV)
