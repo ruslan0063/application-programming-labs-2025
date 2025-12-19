@@ -1,0 +1,18 @@
+1 Установка необходимых библиотек (один раз, если ещё не установлены)
+pip install pandas opencv-python numpy matplotlib
+
+2 По умолчанию (анализирует красный канал, сохраняет dataframe.csv и histogram.jpg)
+python lab4.py
+
+3 Указать другой канал (green или blue)
+python lab4.py -s green
+python lab4.py -s blue
+
+4 Указать свои пути
+python lab4.py -c annotation.csv -d my_dataframe.csv -g my_histogram.jpg -s red
+
+
+python lab4.py -s red
+python lab4.py -s green
+python lab4.py -s blue
+
