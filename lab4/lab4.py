@@ -39,7 +39,7 @@ def get_brightness_range(mean_value: float) -> str:
     for i in range(len(bins) - 1):
         if bins[i] <= mean_value < bins[i + 1]:
             return f"{int(bins[i])}-{int(bins[i + 1] - 1)}"
-    return "201-255"  # для значений 201–255
+    return "201-255"
 
 
 def create_dataframe(annotation_path: str, channel: str) -> pd.DataFrame:
@@ -52,7 +52,7 @@ def create_dataframe(annotation_path: str, channel: str) -> pd.DataFrame:
     mean_brightnesses = []
     ranges = []
 
-    # Используем АБСОЛЮТНЫЙ путь — он всегда правильный!
+    # Используем абсолютный путь
     for abs_path in df["Абсолютный путь"]:
         image = cv2.imread(abs_path)
         mean_val = calculate_mean_brightness(image, channel_idx)
@@ -68,7 +68,6 @@ def create_dataframe(annotation_path: str, channel: str) -> pd.DataFrame:
 def plot_histogram(df: pd.DataFrame, channel: str, save_path: str):
     """Строит гистограмму распределения файлов по диапазонам яркости"""
     range_column = f"Диапазон яркости ({channel})"
-    # Убираем строки с ошибкой загрузки для графика
     clean_data = df[df[range_column] != "Ошибка загрузки"]
     counts = clean_data[range_column].value_counts().sort_index()
 
@@ -98,8 +97,27 @@ def main():
 
         # Сортировка по средней яркости
         sorted_df = df.sort_values("Средняя яркость", ignore_index=True, na_position='last')
-        print("\nDataFrame отсортирован по средней яркости (первые 10 строк):")
-        print(sorted_df.head(10))
+
+        # вывод количества строк
+        print("\n")
+        print("ОТСОРТИРОВАННЫЙ DATAFRAME")
+        print(" ")
+        while True:
+            try:
+                user_input = input("\nСколько строк вывести? (Enter — 10, 'all' — все): ").strip()
+                if user_input == "" or user_input.lower() == "all":
+                    n = len(sorted_df) if user_input.lower() == "all" else 10
+                else:
+                    n = int(user_input)
+                    if n <= 0:
+                        print("Введите положительное число.")
+                        continue
+                break
+            except ValueError:
+                print("Ошибка: введите число или 'all'.")
+
+        print(f"\nПервые {n} строк отсортированного DataFrame:")
+        print(sorted_df.head(n) if n < len(sorted_df) else sorted_df)
 
         # Сохранение DataFrame
         sorted_df.to_csv(dataframe_path, index=False)
@@ -108,7 +126,7 @@ def main():
         # Гистограмма
         plot_histogram(sorted_df, channel, graph_path)
         print(f"Гистограмма сохранена в: {graph_path}")
-
+        print("Все работает без ошибок")
     except Exception as exc:
         print(f"Возникла ошибка: {exc}")
 
